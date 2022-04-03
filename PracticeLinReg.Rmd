@@ -1,0 +1,186 @@
+---
+title: "Linear Regression Challenge"
+author: "Madison Pickett"
+date: "4/1/2022"
+output: html_document
+---
+
+```{r setup}
+#Exercise in class
+#RESample with replacement and calculate the beta coefficients
+library(tidyverse)
+library(skimr)
+library(slider)
+library(ggplot2)
+library(manipulate)
+library(dplyr)
+library(patchwork)
+f <- "https://raw.githubusercontent.com/difiore/ada-2022-datasets/main/Street_et_al_2017.csv"
+d <- read_csv(f, col_names = TRUE)
+#Do a quick exploratory data analysis where you generate the five-number summary (median, minimum and maximum and 1st and 3rd quartile values), plus mean and standard deviation, for each quantitative variable
+skim(d)
+head(d)
+g<-d[!is.na(d$ECV),]
+damend<-g[!is.na(g$Group_size),]
+
+#From this dataset, plot brain size (ECV) as a function of social group size (Group_size), longevity (Longevity), juvenile period length (Weaning), and reproductive lifespan (Repro_lifespan)
+
+p1<-plot(data = damend, ECV ~ Group_size)
+p1
+p2<-plot(data = damend, ECV ~ Longevity)
+p2
+p3<-plot(data = damend, ECV ~ Repro_lifespan)
+p3
+p4<-plot(data = damend, ECV ~ Gestation)
+p4
+
+#Derive by hand the ordinary least squares regression coefficients ECV as a function of social group size
+(beta1 <- cor(damend$Group_size, damend$ECV) * (sd(damend$ECV)/sd(damend$Group_size)))
+beta1
+(beta0 <- mean(damend$ECV) - beta1 * mean(damend$Group_size))
+beta0
+
+#Confirm that you get the same results using the lm() function
+m<-lm(ECV~Group_size, data=damend)
+summary(m)
+
+#Repeat the analysis above for three different major radiations of primates – “catarrhines,” “platyrrhines,” and “strepsirhines”) separately. These are stored in the variable Taxonomic_group.
+
+Cata<-filter(damend, Taxonomic_group=="Catarrhini")
+Plat<-filter(damend, Taxonomic_group=="Platyrrhini")
+Strep<-filter(damend, Taxonomic_group=="Strepsirhini")
+
+skim(Cata)
+skim(Plat)
+skim(Strep)
+
+Catp1<-plot(data = Cata, ECV ~ Group_size)
+Catp1
+Catp2<-plot(data = Cata, ECV ~ Longevity)
+Catp2
+Catp3<-plot(data = Cata, ECV ~ Repro_lifespan)
+Catp3
+Catp4<-plot(data = Cata, ECV ~ Gestation)
+Catp4
+
+Platp1<-plot(data = Plat, ECV ~ Group_size)
+Platp1
+Platp2<-plot(data = Plat, ECV ~ Longevity)
+Platp2
+Platp3<-plot(data = Plat, ECV ~ Repro_lifespan)
+Platp3
+Platp4<-plot(data = Plat, ECV ~ Gestation)
+Platp4
+
+Sp1<-plot(data = Strep, ECV ~ Group_size)
+Sp1
+Sp2<-plot(data = Strep, ECV ~ Longevity)
+Sp2
+Sp3<-plot(data = Strep, ECV ~ Repro_lifespan)
+Sp3
+Sp4<-plot(data = Strep, ECV ~ Gestation)
+Sp4
+
+(Cbeta1 <- cor(Cata$Group_size, Cata$ECV) * (sd(Cata$ECV)/sd(Cata$Group_size)))
+Cbeta1
+(Cbeta0 <- mean(Cata$ECV) - Cbeta1 * mean(Cata$Group_size))
+Cbeta0
+
+(Pbeta1 <- cor(Plat$Group_size, Plat$ECV) * (sd(Plat$ECV)/sd(Plat$Group_size)))
+Pbeta1
+(Pbeta0 <- mean(Plat$ECV) - Pbeta1 * mean(Plat$Group_size))
+Pbeta0
+
+(Sbeta1 <- cor(Strep$Group_size, Strep$ECV) * (sd(Strep$ECV)/sd(Strep$Group_size)))
+Sbeta1
+(Sbeta0 <- mean(Strep$ECV) - Sbeta1 * mean(Strep$Group_size))
+Sbeta0
+
+Cm<-lm(ECV~Group_size, data=Cata)
+summary(Cm)
+
+Pm<-lm(ECV~Group_size, data=Plat)
+summary(Pm)
+
+Sm<-lm(ECV~Group_size, data=Strep)
+summary(Sm)
+#Do your regression coefficients differ among groups? How might you determine this?
+  #The regression coefficients do differ among groups... I calculated it! What was really interesting was how much higher the B0 was for the Catharrini group as compared to the others. This means that the y intercept is much higher for the linear regression than the others, indicating that the values within this group are greater than the other groups. Insight can also be given by looking at the plots of this data.
+
+
+#For your first regression of ECV on social group size, calculate the standard error for the slope coefficient, the 95% CI, and the p value associated with this coefficient by hand. Also extract this same information from the results of running the lm() function.
+
+#change variables here
+n <- nrow(damend)
+df<-n-2
+mean_x <- mean(damend$Group_size)
+y_pred = beta0 + beta1*damend$Group_size
+y_error = damend$ECV - y_pred
+std_err_b1 <- sqrt((sum(y_error^2))/((n-2)*sum((damend$Group_size-mean_x)^2)))
+std_err_b1
+std_err_b0<-std_err_b1*sqrt((sum(damend$Group_size^2))/n)
+std_err_b0
+
+ci_t <- beta1 + c(-1, 1) * qt(1 - 0.05 / 2, df) * std_err_b1
+ci_t
+t_stat<-beta1/std_err_b1
+t_stat
+
+p_upper <- 1-pt(abs(t_stat ), df=n-2)
+# or 1 - pt(t_stat, df=n-1, lower.tail = FALSE)
+p_lower <- pt(-1*abs(t_stat ), df=n-2)
+# or pt(t_stat, df=n-1, lower.tail = TRUE)
+p <- p_upper + p_lower
+p
+
+m<-lm(ECV~Group_size, data=damend)
+summary(m)
+
+#now do the  permutation approach 
+#Then, use a permutation approach with 1000 permutations to generate a null sampling distribution for the slope coefficient. What is it that you need to permute? What is the p value associated with your original slope coefficient?
+library(infer)
+permuted.slope <- damend %>%
+  specify(ECV~Group_size) %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 1000, type = "permute") %>%
+  calculate(stat = "slope")
+head(permuted.slope) 
+pval_t<-t.test(permuted.slope)
+pval_t
+hist_permut<-hist(permuted.slope$stat, main="Histogram of Permuted\nSlope Values",
+  xlab = "Slope Coefficient") 
+
+#Use bootstrapping to generate a 95% CI for your estimate of the slope coefficient using both the percentile method and the theory-based method (i.e., based on the standard deviation of the bootstrapped sampling distribution). Do these CIs suggest that your slope coefficient is different from zero?
+
+#percentile methodd
+boot.slope <- damend %>%
+  specify(ECV~Group_size) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "slope")
+
+head(boot.slope) # slopes from first few bootstrap replicates
+
+critical_value <- qt(p_upper, df = n-2) #check this
+
+boot.slope.summary <- boot.slope %>%
+  # summarize the mean, t distribution based CI, and quantile-based CI
+  summarize(
+    # mean of stat
+    estimate = mean(stat),
+    # std error of stat
+    std.error = sd(stat),
+    # calculate the CI based on the SE and t distribution
+    lower = estimate - std.error * critical_value,
+    upper = estimate + std.error * critical_value,
+    # calculate the CI based on the quantile (percentile)  method
+    boot.lower = quantile(stat, p_lower),
+    boot.upper = quantile(stat, p_upper)
+  )
+
+# show summary of bootstrap sampling distribution
+boot.slope.summary
+
+t.test(boot.slope)
+
+#The CI of the data is 237.3464-265.5944 "When the confidence interval for a model term does not include zero we conclude that variable has a non-zero effect on the response variable", in this case the range does not include zero meaning that the slope coefficient is non-zero.  source: https://www.introranger.org/post/linear-regression/
+```
